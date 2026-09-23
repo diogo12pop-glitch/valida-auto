@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import {
   ArrowLeft,
@@ -1194,7 +1194,509 @@ function Registration({
   )
 }
 
+
+function CertificateValidation({
+  code,
+}: {
+  code: string
+}) {
+  const [loading, setLoading] = useState(true)
+  const [certificate, setCertificate] = useState<any | null>(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let active = true
+
+    const validate = async () => {
+      setLoading(true)
+      setError('')
+      setCertificate(null)
+
+      const normalizedCode = decodeURIComponent(code)
+        .trim()
+        .toUpperCase()
+
+      if (!normalizedCode) {
+        if (active) {
+          setError('Código de validação não informado.')
+          setLoading(false)
+        }
+        return
+      }
+
+      const { data, error } = await supabase.rpc(
+        'validate_certificate',
+        {
+          p_code: normalizedCode,
+        }
+      )
+
+      if (!active) return
+
+      if (error) {
+        console.error('Erro ao validar certificado:', error)
+        setError('Não foi possível consultar este certificado agora.')
+        setLoading(false)
+        return
+      }
+
+      const result = Array.isArray(data) ? data[0] : data
+
+      if (!result) {
+        setError('Certificado não encontrado ou inválido.')
+        setLoading(false)
+        return
+      }
+
+      setCertificate(result)
+      setLoading(false)
+    }
+
+    validate()
+
+    return () => {
+      active = false
+    }
+  }, [code])
+
+  const formatDate = (value: string) => {
+    if (!value) return '-'
+
+    return new Date(value).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'America/Sao_Paulo',
+    })
+  }
+
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        background:
+          'linear-gradient(180deg, #06152f 0%, #081c3d 45%, #f4f7fb 45%, #f4f7fb 100%)',
+        color: '#10244b',
+        padding: '32px 18px',
+        boxSizing: 'border-box',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 760,
+          margin: '0 auto',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            marginBottom: 42,
+            color: '#fff',
+          }}
+        >
+          <a
+            href="/"
+            style={{
+              color: '#fff',
+              textDecoration: 'none',
+              fontWeight: 800,
+              fontSize: 22,
+              letterSpacing: '-0.5px',
+            }}
+          >
+            Valida<span style={{ color: '#1677ff' }}>Auto</span>
+          </a>
+
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 800,
+              letterSpacing: '1.4px',
+              opacity: 0.75,
+            }}
+          >
+            VALIDAÇÃO OFICIAL
+          </span>
+        </div>
+
+        <div
+          style={{
+            background: '#fff',
+            borderRadius: 24,
+            padding: '34px 26px',
+            boxShadow: '0 24px 70px rgba(3, 19, 48, .18)',
+            border: '1px solid rgba(13, 48, 100, .08)',
+          }}
+        >
+          {loading ? (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '60px 10px',
+              }}
+            >
+              <div
+                style={{
+                  width: 58,
+                  height: 58,
+                  margin: '0 auto 22px',
+                  borderRadius: '50%',
+                  border: '5px solid #dbe7f7',
+                  borderTopColor: '#1269e8',
+                  animation: 'spin 0.9s linear infinite',
+                }}
+              />
+
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: 25,
+                }}
+              >
+                Validando certificado...
+              </h1>
+
+              <p
+                style={{
+                  marginTop: 10,
+                  color: '#667085',
+                }}
+              >
+                Consultando o registro no ValidaAuto.
+              </p>
+            </div>
+          ) : certificate ? (
+            <>
+              <div
+                style={{
+                  textAlign: 'center',
+                  marginBottom: 30,
+                }}
+              >
+                <div
+                  style={{
+                    width: 68,
+                    height: 68,
+                    margin: '0 auto 18px',
+                    borderRadius: '50%',
+                    background: '#e9f9ef',
+                    color: '#168442',
+                    display: 'grid',
+                    placeItems: 'center',
+                  }}
+                >
+                  <CheckCircle2 size={38} />
+                </div>
+
+                <div
+                  style={{
+                    display: 'inline-block',
+                    padding: '7px 13px',
+                    borderRadius: 999,
+                    background: '#e9f9ef',
+                    color: '#168442',
+                    fontSize: 12,
+                    fontWeight: 900,
+                    letterSpacing: '1px',
+                  }}
+                >
+                  CERTIFICADO VÁLIDO
+                </div>
+
+                <h1
+                  style={{
+                    margin: '18px 0 6px',
+                    fontSize: 'clamp(28px, 6vw, 42px)',
+                    lineHeight: 1.05,
+                    color: '#092555',
+                  }}
+                >
+                  {certificate.full_name}
+                </h1>
+
+                <p
+                  style={{
+                    margin: 0,
+                    color: '#667085',
+                    fontSize: 15,
+                  }}
+                >
+                  Certificado de Conclusão — ValidaAuto
+                </p>
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns:
+                    'repeat(auto-fit, minmax(190px, 1fr))',
+                  gap: 14,
+                  marginBottom: 24,
+                }}
+              >
+                <div
+                  style={{
+                    padding: 18,
+                    borderRadius: 16,
+                    background: '#f7f9fc',
+                    border: '1px solid #e4eaf2',
+                  }}
+                >
+                  <span
+                    style={{
+                      display: 'block',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      letterSpacing: '.8px',
+                      color: '#7a8699',
+                      marginBottom: 7,
+                    }}
+                  >
+                    APROVEITAMENTO
+                  </span>
+
+                  <strong
+                    style={{
+                      fontSize: 28,
+                      color: '#0b3d8f',
+                    }}
+                  >
+                    {certificate.percentage}%
+                  </strong>
+                </div>
+
+                <div
+                  style={{
+                    padding: 18,
+                    borderRadius: 16,
+                    background: '#f7f9fc',
+                    border: '1px solid #e4eaf2',
+                  }}
+                >
+                  <span
+                    style={{
+                      display: 'block',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      letterSpacing: '.8px',
+                      color: '#7a8699',
+                      marginBottom: 7,
+                    }}
+                  >
+                    CÓDIGO
+                  </span>
+
+                  <strong
+                    style={{
+                      fontSize: 18,
+                      color: '#0b3d8f',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {certificate.certificate_code}
+                  </strong>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  borderTop: '1px solid #e4eaf2',
+                  paddingTop: 22,
+                  display: 'grid',
+                  gap: 15,
+                }}
+              >
+                <div>
+                  <span
+                    style={{
+                      display: 'block',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      color: '#7a8699',
+                      marginBottom: 5,
+                    }}
+                  >
+                    OFICINA
+                  </span>
+
+                  <strong>{certificate.workshop_name || '-'}</strong>
+                </div>
+
+                <div>
+                  <span
+                    style={{
+                      display: 'block',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      color: '#7a8699',
+                      marginBottom: 5,
+                    }}
+                  >
+                    LOCALIZAÇÃO
+                  </span>
+
+                  <strong>
+                    {[certificate.city, certificate.state]
+                      .filter(Boolean)
+                      .join(' - ') || '-'}
+                  </strong>
+                </div>
+
+                <div>
+                  <span
+                    style={{
+                      display: 'block',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      color: '#7a8699',
+                      marginBottom: 5,
+                    }}
+                  >
+                    DATA DE EMISSÃO
+                  </span>
+
+                  <strong>
+                    {formatDate(certificate.issued_at)}
+                  </strong>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 28,
+                  padding: 18,
+                  borderRadius: 16,
+                  background: '#f0f6ff',
+                  border: '1px solid #cfe0fa',
+                  color: '#244267',
+                  fontSize: 13,
+                  lineHeight: 1.55,
+                }}
+              >
+                <strong
+                  style={{
+                    display: 'block',
+                    marginBottom: 5,
+                    color: '#0b3d8f',
+                  }}
+                >
+                  AUTENTICIDADE CONFIRMADA
+                </strong>
+
+                Este registro foi localizado no sistema de validação do
+                ValidaAuto através do código informado.
+              </div>
+            </>
+          ) : (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '45px 10px',
+              }}
+            >
+              <div
+                style={{
+                  width: 68,
+                  height: 68,
+                  margin: '0 auto 18px',
+                  borderRadius: '50%',
+                  background: '#fff0f0',
+                  color: '#c62828',
+                  display: 'grid',
+                  placeItems: 'center',
+                }}
+              >
+                <XCircle size={38} />
+              </div>
+
+              <div
+                style={{
+                  display: 'inline-block',
+                  padding: '7px 13px',
+                  borderRadius: 999,
+                  background: '#fff0f0',
+                  color: '#c62828',
+                  fontSize: 12,
+                  fontWeight: 900,
+                  letterSpacing: '1px',
+                }}
+              >
+                CERTIFICADO NÃO ENCONTRADO
+              </div>
+
+              <h1
+                style={{
+                  margin: '18px 0 10px',
+                  fontSize: 28,
+                  color: '#092555',
+                }}
+              >
+                Não foi possível validar este certificado.
+              </h1>
+
+              <p
+                style={{
+                  maxWidth: 520,
+                  margin: '0 auto',
+                  color: '#667085',
+                  lineHeight: 1.6,
+                }}
+              >
+                {error ||
+                  'Verifique se o código informado está correto e tente novamente.'}
+              </p>
+
+              <a
+                href="/"
+                className="primaryButton"
+                style={{
+                  display: 'inline-flex',
+                  marginTop: 26,
+                  textDecoration: 'none',
+                }}
+              >
+                Voltar para o ValidaAuto
+              </a>
+            </div>
+          )}
+        </div>
+
+        <p
+          style={{
+            textAlign: 'center',
+            color: '#d8e4f5',
+            fontSize: 12,
+            marginTop: 24,
+          }}
+        >
+          ValidaAuto • Plataforma de Certificação
+        </p>
+      </div>
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  )
+}
+
 function App() {
+  const validationMatch =
+    window.location.pathname.match(/^\/validar\/([^/]+)\/?$/)
+
+  if (validationMatch) {
+    return (
+      <CertificateValidation
+        code={validationMatch[1]}
+      />
+    )
+  }
+
   const [screen, setScreen] = useState<
     'landing' | 'quiz' | 'registration'
   >('landing')
