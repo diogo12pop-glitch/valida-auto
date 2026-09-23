@@ -918,7 +918,7 @@ function Registration({
               <button
   className="primaryButton conversionButton"
   onClick={() => {
-    window.location.href = 'https://pay.cakto.com.br/7cun6xe_1035936'
+    window.location.href = `https://pay.cakto.com.br/7cun6xe_1035936?sck=${requestToken}`
   }}
 >
   Continuar para pagamento <ArrowRight size={20} />
